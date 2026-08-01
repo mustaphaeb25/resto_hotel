@@ -1,0 +1,211 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  GUEST
+  ADMIN
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum ReviewTarget {
+  DISH
+  ROOM
+  EXPERIENCE
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  phone     String?
+  role      Role     @default(GUEST)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  roomReservations   RoomReservation[]
+  diningReservations DiningReservation[]
+  experienceBookings ExperienceBooking[]
+  reviews            Review[]
+
+  @@map("users")
+}
+
+model Room {
+  id          Int      @id @default(autoincrement())
+  name        String
+  category    String
+  badge       String?
+  price       Float
+  size        String
+  bed         String
+  maxGuests   Int
+  description String
+  features    String[]
+  image       String
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  reservations RoomReservation[]
+
+  @@map("rooms")
+}
+
+model MenuItem {
+  id          Int      @id @default(autoincrement())
+  name        String
+  price       Float
+  category    String
+  description String
+  image       String
+  tags        Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("menu_items")
+}
+
+model Experience {
+  id          Int      @id @default(autoincrement())
+  name        String
+  category    String
+  duration    String
+  groupSize   String
+  price       Float
+  unit        String
+  description String
+  image       String
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  bookings ExperienceBooking[]
+
+  @@map("experiences")
+}
+
+model GalleryItem {
+  id        Int      @id @default(autoincrement())
+  category  String
+  label     String
+  image     String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("gallery_items")
+}
+
+model RoomReservation {
+  id             String            @id @default(uuid())
+  userId         String?
+  user           User?             @relation(fields: [userId], references: [id])
+  guestName      String?           @map("guest_name")
+  guestPhone     String?           @map("guest_phone")
+  guestEmail     String?           @map("guest_email")
+  roomId         Int
+  room           Room              @relation(fields: [roomId], references: [id])
+  checkIn        DateTime          @map("check_in")
+  checkOut       DateTime          @map("check_out")
+  guests         Int
+  status         ReservationStatus @default(PENDING)
+  totalPrice     Float             @map("total_price")
+  specialRequests String?          @map("special_requests")
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
+
+  @@map("room_reservations")
+}
+
+model DiningReservation {
+  id        String            @id @default(uuid())
+  userId    String?
+  user      User?             @relation(fields: [userId], references: [id])
+  name      String
+  phone     String
+  date      DateTime
+  time      String
+  guests    Int
+  seating   String
+  status    ReservationStatus @default(PENDING)
+  createdAt DateTime          @default(now()) @map("created_at")
+  updatedAt DateTime          @updatedAt @map("updated_at")
+
+  @@map("dining_reservations")
+}
+
+model ExperienceBooking {
+  id           String            @id @default(uuid())
+  userId       String?
+  user         User?             @relation(fields: [userId], references: [id])
+  name         String?
+  email        String?
+  phone        String?
+  experienceId Int
+  experience   Experience        @relation(fields: [experienceId], references: [id])
+  date         DateTime
+  guests       Int
+  status       ReservationStatus @default(PENDING)
+  totalPrice   Float             @map("total_price")
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @updatedAt @map("updated_at")
+
+  @@map("experience_bookings")
+}
+
+model ContactInquiry {
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String
+  message   String
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("contact_inquiries")
+}
+
+model NewsletterSubscriber {
+  id         String   @id @default(uuid())
+  email      String   @unique
+  subscribed Boolean  @default(true)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("newsletter_subscribers")
+}
+
+model Upload {
+  id           String   @id @default(uuid())
+  filename     String   @unique
+  originalName String   @map("original_name")
+  mimeType     String   @map("mime_type")
+  size         Int
+  url          String
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("uploads")
+}
+
+model Review {
+  id        String       @id @default(uuid())
+  target    ReviewTarget
+  itemId    Int          @map("item_id")
+  rating    Int
+  comment   String?
+  userId    String?      @map("user_id")
+  user      User?        @relation(fields: [userId], references: [id])
+  createdAt DateTime     @default(now()) @map("created_at")
+
+  @@unique([target, itemId, userId])
+  @@map("reviews")
+}
