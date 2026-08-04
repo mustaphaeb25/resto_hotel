@@ -27,7 +27,18 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
-app.use(cors({ origin: env.frontendUrl, credentials: true }));
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin || env.frontendUrls.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(null, false);
+      }
+    },
+    credentials: true,
+  })
+);
 app.use(morgan('dev'));
 app.use(express.json());
 
