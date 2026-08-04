@@ -1,7 +1,6 @@
 import 'dotenv/config';
 
-console.log("JWT_SECRET =", process.env.JWT_SECRET);
-console.log("DATABASE_URL =", process.env.DATABASE_URL ? "EXISTS" : "MISSING");
+console.log("FRONTEND_URL =", process.env.FRONTEND_URL);
 
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
   throw new Error("JWT_SECRET must be set to a random string of at least 32 characters");
