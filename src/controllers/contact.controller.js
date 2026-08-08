@@ -1,6 +1,7 @@
 import prisma from '../config/database.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { parseUuidId } from '../utils/ids.js';
+import { getPagination } from '../utils/pagination.js';
 
 export async function submit(req, res) {
   const inquiry = await prisma.contactInquiry.create({
@@ -10,10 +11,18 @@ export async function submit(req, res) {
 }
 
 export async function listAll(req, res) {
-  const inquiries = await prisma.contactInquiry.findMany({
-    orderBy: { createdAt: 'desc' },
-  });
-  res.json(inquiries);
+  const { page, limit, skip, take } = getPagination(req.query);
+  const where = {};
+  const [inquiries, total] = await Promise.all([
+    prisma.contactInquiry.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take,
+    }),
+    prisma.contactInquiry.count({ where }),
+  ]);
+  res.json({ page, limit, total, data: inquiries });
 }
 
 export async function markAsRead(req, res) {

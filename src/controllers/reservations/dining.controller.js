@@ -1,6 +1,8 @@
 import prisma from '../../config/database.js';
 import { AppError } from '../../middleware/errorHandler.js';
 import { parseUuidId } from '../../utils/ids.js';
+import { getPagination } from '../../utils/pagination.js';
+import { parseLocalDate } from '../../utils/date.js';
 import { RESERVATION_STATUSES } from '../../validators/reservation.validator.js';
 
 const VALID_TIMES = {
@@ -18,7 +20,7 @@ export async function create(req, res) {
     throw new AppError('Invalid reservation time', 400);
   }
 
-  const reservationDate = new Date(date);
+  const reservationDate = parseLocalDate(date);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   if (reservationDate < today) {
@@ -67,7 +69,7 @@ export async function update(req, res) {
     if (!RESERVATION_STATUSES.includes(status)) throw new AppError('Invalid status', 400);
     data.status = status;
   }
-  if (date !== undefined) data.date = new Date(date);
+  if (date !== undefined) data.date = parseLocalDate(date);
   if (time !== undefined) {
     const normalizedTime = time.toUpperCase();
     if (!ALL_VALID_TIMES.includes(normalizedTime)) {
@@ -85,9 +87,17 @@ export async function update(req, res) {
 }
 
 export async function getAllAdmin(req, res) {
-  const reservations = await prisma.diningReservation.findMany({
-    include: { user: { select: { id: true, name: true, email: true } } },
-    orderBy: { createdAt: 'desc' },
-  });
-  res.json(reservations);
+  const { page, limit, skip, take } = getPagination(req.query);
+  const where = {};
+  const [reservations, total] = await Promise.all([
+    prisma.diningReservation.findMany({
+      where,
+      include: { user: { select: { id: true, name: true, email: true } } },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take,
+    }),
+    prisma.diningReservation.count({ where }),
+  ]);
+  res.json({ page, limit, total, data: reservations });
 }

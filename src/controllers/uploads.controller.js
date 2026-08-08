@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 import prisma from '../config/database.js';
 import { AppError } from '../middleware/errorHandler.js';
+import { getPagination } from '../utils/pagination.js';
 import { verifyImageSignature } from '../utils/fileType.js';
 
 export async function uploadFile(req, res) {
@@ -26,8 +27,16 @@ export async function uploadFile(req, res) {
 }
 
 export async function listAll(req, res) {
-  const uploads = await prisma.upload.findMany({
-    orderBy: { createdAt: 'desc' },
-  });
-  res.json(uploads);
+  const { page, limit, skip, take } = getPagination(req.query);
+  const where = {};
+  const [uploads, total] = await Promise.all([
+    prisma.upload.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take,
+    }),
+    prisma.upload.count({ where }),
+  ]);
+  res.json({ page, limit, total, data: uploads });
 }

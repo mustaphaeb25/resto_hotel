@@ -26,9 +26,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 
+app.set('trust proxy', env.trustProxy);
+
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
-app.use(cors({ origin: true, credentials: true }));
-app.use(morgan('dev'));
+app.use(cors({ origin: env.frontendUrls, credentials: true }));
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(express.json());
 
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
@@ -39,6 +41,7 @@ app.use('/api/reviews', writeLimiter);
 app.use('/api/contact', writeLimiter);
 app.use('/api/newsletter', writeLimiter);
 app.use('/api/reservations', writeLimiter);
+app.use('/api/uploads', writeLimiter);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/rooms', roomsRoutes);

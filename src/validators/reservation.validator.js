@@ -24,7 +24,7 @@ export const roomReservationUpdateSchema = z.object({
 
 export const diningReservationSchema = z.object({
   name: z.string().min(2, 'Name is required'),
-  phone: z.string().min(6, 'Valid phone number is required'),
+  phone: z.string().min(6, 'Valid phone number is required').optional().or(z.literal('')),
   date: z.string().refine(validDate, 'Invalid date'),
   time: z.string().regex(/^\d{1,2}:\d{2}\s*(AM|PM)$/i, 'Invalid time format (e.g. 7:00 PM)'),
   guests: z.number().int().positive().max(20),

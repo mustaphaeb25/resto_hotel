@@ -1,4 +1,5 @@
 import prisma from '../config/database.js';
+import { getPagination } from '../utils/pagination.js';
 
 export async function subscribe(req, res) {
   const { email } = req.validatedBody;
@@ -19,10 +20,18 @@ export async function subscribe(req, res) {
 }
 
 export async function listAll(req, res) {
-  const subscribers = await prisma.newsletterSubscriber.findMany({
-    orderBy: { createdAt: 'desc' },
-  });
-  res.json(subscribers);
+  const { page, limit, skip, take } = getPagination(req.query);
+  const where = {};
+  const [subscribers, total] = await Promise.all([
+    prisma.newsletterSubscriber.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take,
+    }),
+    prisma.newsletterSubscriber.count({ where }),
+  ]);
+  res.json({ page, limit, total, data: subscribers });
 }
 
 export async function unsubscribe(req, res) {

@@ -7,57 +7,37 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  GUEST
-  ADMIN
-}
-
-enum ReservationStatus {
-  PENDING
-  CONFIRMED
-  CANCELLED
-  COMPLETED
-}
-
-enum ReviewTarget {
-  DISH
-  ROOM
-  EXPERIENCE
-}
-
 model User {
-  id        String   @id @default(uuid())
-  name      String
-  email     String   @unique
-  password  String
-  phone     String?
-  role      Role     @default(GUEST)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  roomReservations   RoomReservation[]
+  id                 String              @id @default(uuid())
+  name               String
+  email              String              @unique
+  password           String
+  phone              String?
+  role               Role                @default(GUEST)
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
   diningReservations DiningReservation[]
   experienceBookings ExperienceBooking[]
   reviews            Review[]
+  roomReservations   RoomReservation[]
 
   @@map("users")
 }
 
 model Room {
-  id          Int      @id @default(autoincrement())
-  name        String
-  category    String
-  badge       String?
-  price       Float
-  size        String
-  bed         String
-  maxGuests   Int
-  description String
-  features    String[]
-  image       String
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
+  id           Int               @id @default(autoincrement())
+  name         String
+  category     String
+  badge        String?
+  price        Float
+  size         String
+  bed          String
+  maxGuests    Int
+  description  String
+  features     String[]
+  image        String
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @updatedAt @map("updated_at")
   reservations RoomReservation[]
 
   @@map("rooms")
@@ -78,7 +58,7 @@ model MenuItem {
 }
 
 model Experience {
-  id          Int      @id @default(autoincrement())
+  id          Int                 @id @default(autoincrement())
   name        String
   category    String
   duration    String
@@ -87,10 +67,9 @@ model Experience {
   unit        String
   description String
   image       String
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  bookings ExperienceBooking[]
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @updatedAt @map("updated_at")
+  bookings    ExperienceBooking[]
 
   @@map("experiences")
 }
@@ -106,22 +85,22 @@ model GalleryItem {
 }
 
 model RoomReservation {
-  id             String            @id @default(uuid())
-  userId         String?
-  user           User?             @relation(fields: [userId], references: [id])
-  guestName      String?           @map("guest_name")
-  guestPhone     String?           @map("guest_phone")
-  guestEmail     String?           @map("guest_email")
-  roomId         Int
-  room           Room              @relation(fields: [roomId], references: [id])
-  checkIn        DateTime          @map("check_in")
-  checkOut       DateTime          @map("check_out")
-  guests         Int
-  status         ReservationStatus @default(PENDING)
-  totalPrice     Float             @map("total_price")
-  specialRequests String?          @map("special_requests")
-  createdAt      DateTime          @default(now()) @map("created_at")
-  updatedAt      DateTime          @updatedAt @map("updated_at")
+  id              String            @id @default(uuid())
+  userId          String?
+  roomId          Int
+  checkIn         DateTime          @map("check_in")
+  checkOut        DateTime          @map("check_out")
+  guests          Int
+  status          ReservationStatus @default(PENDING)
+  totalPrice      Float             @map("total_price")
+  specialRequests String?           @map("special_requests")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+  guestEmail      String?           @map("guest_email")
+  guestName       String?           @map("guest_name")
+  guestPhone      String?           @map("guest_phone")
+  room            Room              @relation(fields: [roomId], references: [id])
+  user            User?             @relation(fields: [userId], references: [id])
 
   @@map("room_reservations")
 }
@@ -129,7 +108,6 @@ model RoomReservation {
 model DiningReservation {
   id        String            @id @default(uuid())
   userId    String?
-  user      User?             @relation(fields: [userId], references: [id])
   name      String
   phone     String
   date      DateTime
@@ -139,6 +117,7 @@ model DiningReservation {
   status    ReservationStatus @default(PENDING)
   createdAt DateTime          @default(now()) @map("created_at")
   updatedAt DateTime          @updatedAt @map("updated_at")
+  user      User?             @relation(fields: [userId], references: [id])
 
   @@map("dining_reservations")
 }
@@ -146,18 +125,18 @@ model DiningReservation {
 model ExperienceBooking {
   id           String            @id @default(uuid())
   userId       String?
-  user         User?             @relation(fields: [userId], references: [id])
-  name         String?
-  email        String?
-  phone        String?
   experienceId Int
-  experience   Experience        @relation(fields: [experienceId], references: [id])
   date         DateTime
   guests       Int
   status       ReservationStatus @default(PENDING)
   totalPrice   Float             @map("total_price")
   createdAt    DateTime          @default(now()) @map("created_at")
   updatedAt    DateTime          @updatedAt @map("updated_at")
+  email        String?
+  name         String?
+  phone        String?
+  experience   Experience        @relation(fields: [experienceId], references: [id])
+  user         User?             @relation(fields: [userId], references: [id])
 
   @@map("experience_bookings")
 }
@@ -203,9 +182,27 @@ model Review {
   rating    Int
   comment   String?
   userId    String?      @map("user_id")
-  user      User?        @relation(fields: [userId], references: [id])
   createdAt DateTime     @default(now()) @map("created_at")
+  user      User?        @relation(fields: [userId], references: [id])
 
   @@unique([target, itemId, userId])
   @@map("reviews")
+}
+
+enum Role {
+  GUEST
+  ADMIN
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum ReviewTarget {
+  DISH
+  ROOM
+  EXPERIENCE
 }

@@ -16,24 +16,17 @@ export async function create(req, res) {
   const item = await model.findUnique({ where: { id: itemId } });
   if (!item) throw new AppError('Item not found', 404);
 
-  const data = {
-    target,
-    itemId,
-    rating,
-    comment: comment || null,
-    userId: req.user?.id ?? null,
-  };
-
-  let review;
-  if (req.user) {
-    review = await prisma.review.upsert({
-      where: { target_itemId_userId: { target, itemId, userId: req.user.id } },
-      create: data,
-      update: { rating, comment: comment || null },
-    });
-  } else {
-    review = await prisma.review.create({ data });
-  }
+  const review = await prisma.review.upsert({
+    where: { target_itemId_userId: { target, itemId, userId: req.user.id } },
+    create: {
+      target,
+      itemId,
+      rating,
+      comment: comment || null,
+      userId: req.user.id,
+    },
+    update: { rating, comment: comment || null },
+  });
 
   res.status(201).json(review);
 }

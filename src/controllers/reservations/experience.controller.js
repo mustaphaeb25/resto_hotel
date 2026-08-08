@@ -1,6 +1,7 @@
 import prisma from '../../config/database.js';
 import { AppError } from '../../middleware/errorHandler.js';
 import { parseUuidId } from '../../utils/ids.js';
+import { getPagination } from '../../utils/pagination.js';
 import { RESERVATION_STATUSES } from '../../validators/reservation.validator.js';
 
 export async function create(req, res) {
@@ -79,9 +80,17 @@ export async function update(req, res) {
 }
 
 export async function getAllAdmin(req, res) {
-  const bookings = await prisma.experienceBooking.findMany({
-    include: { experience: true, user: { select: { id: true, name: true, email: true } } },
-    orderBy: { createdAt: 'desc' },
-  });
-  res.json(bookings);
+  const { page, limit, skip, take } = getPagination(req.query);
+  const where = {};
+  const [bookings, total] = await Promise.all([
+    prisma.experienceBooking.findMany({
+      where,
+      include: { experience: true, user: { select: { id: true, name: true, email: true } } },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take,
+    }),
+    prisma.experienceBooking.count({ where }),
+  ]);
+  res.json({ page, limit, total, data: bookings });
 }

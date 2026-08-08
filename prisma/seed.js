@@ -69,6 +69,12 @@ const reviews = [
 async function seed() {
   console.log('Seeding database...');
 
+  const adminPasswordRaw = process.env.ADMIN_PASSWORD || '';
+  if (adminPasswordRaw.length < 10) {
+    console.error('ERROR: ADMIN_PASSWORD environment variable must be set to a strong password (min 10 characters) before seeding.');
+    process.exit(1);
+  }
+
   await prisma.roomReservation.deleteMany();
   await prisma.diningReservation.deleteMany();
   await prisma.experienceBooking.deleteMany();
@@ -83,7 +89,7 @@ async function seed() {
 
   console.log('Cleared existing data');
 
-  const adminPassword = await hashPassword('admin123');
+  const adminPassword = await hashPassword(adminPasswordRaw);
   const admin = await prisma.user.create({
     data: {
       name: 'Admin',
@@ -92,7 +98,7 @@ async function seed() {
       role: 'ADMIN',
     },
   });
-  console.log('Created admin user (admin@saffronhouse.com / admin123)');
+  console.log('Created admin user (admin@saffronhouse.com)');
 
   for (const room of rooms) {
     await prisma.room.create({ data: room });

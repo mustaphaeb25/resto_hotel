@@ -1,6 +1,7 @@
-import prisma from '../../config/database.js';
+import prisma, { Prisma } from '../../config/database.js';
 import { AppError } from '../../middleware/errorHandler.js';
 import { parseUuidId } from '../../utils/ids.js';
+import { getPagination } from '../../utils/pagination.js';
 import { RESERVATION_STATUSES } from '../../validators/reservation.validator.js';
 
 const DAY_MS = 1000 * 60 * 60 * 24;
@@ -27,36 +28,49 @@ export async function create(req, res) {
     throw new AppError('Check-out must be after check-in', 400);
   }
 
-  const overlap = await prisma.roomReservation.findFirst({
-    where: {
-      roomId,
-      status: { in: ACTIVE_STATUSES },
-      checkIn: { lt: checkOutDate },
-      checkOut: { gt: checkInDate },
-    },
-  });
-  if (overlap) {
-    throw new AppError('This room is already booked for the selected dates', 409);
-  }
-
   const days = Math.ceil((checkOutDate - checkInDate) / DAY_MS);
   const totalPrice = days * room.price;
 
-  const reservation = await prisma.roomReservation.create({
-    data: {
-      userId: req.user?.id,
-      guestName,
-      guestPhone: guestPhone || null,
-      guestEmail: guestEmail || null,
-      roomId,
-      checkIn: checkInDate,
-      checkOut: checkOutDate,
-      guests,
-      totalPrice,
-      specialRequests,
-    },
-    include: { room: true },
-  });
+  let reservation;
+  try {
+    reservation = await prisma.$transaction(
+      async (tx) => {
+        const overlap = await tx.roomReservation.findFirst({
+          where: {
+            roomId,
+            status: { in: ACTIVE_STATUSES },
+            checkIn: { lt: checkOutDate },
+            checkOut: { gt: checkInDate },
+          },
+        });
+        if (overlap) {
+          throw new AppError('This room is already booked for the selected dates', 409);
+        }
+
+        return tx.roomReservation.create({
+          data: {
+            userId: req.user?.id,
+            guestName,
+            guestPhone: guestPhone || null,
+            guestEmail: guestEmail || null,
+            roomId,
+            checkIn: checkInDate,
+            checkOut: checkOutDate,
+            guests,
+            totalPrice,
+            specialRequests,
+          },
+          include: { room: true },
+        });
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, maxWait: 5000, timeout: 10000 },
+    );
+  } catch (error) {
+    if (error.code === 'P2034') {
+      throw new AppError('This room is already booked for the selected dates', 409);
+    }
+    throw error;
+  }
 
   res.status(201).json(reservation);
 }
@@ -128,9 +142,17 @@ export async function update(req, res) {
 }
 
 export async function getAllAdmin(req, res) {
-  const reservations = await prisma.roomReservation.findMany({
-    include: { room: true, user: { select: { id: true, name: true, email: true } } },
-    orderBy: { createdAt: 'desc' },
-  });
-  res.json(reservations);
+  const { page, limit, skip, take } = getPagination(req.query);
+  const where = {};
+  const [reservations, total] = await Promise.all([
+    prisma.roomReservation.findMany({
+      where,
+      include: { room: true, user: { select: { id: true, name: true, email: true } } },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take,
+    }),
+    prisma.roomReservation.count({ where }),
+  ]);
+  res.json({ page, limit, total, data: reservations });
 }
