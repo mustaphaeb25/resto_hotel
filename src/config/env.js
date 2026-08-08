@@ -16,7 +16,7 @@ export const env = {
       ...defaultFrontendUrls,
       ...(process.env.FRONTEND_URL || "")
         .split(",")
-        .map((url) => url.trim())
+        .map((url) => url.trim().replace(/\/+$/, ""))
         .filter(Boolean),
     ]),
   ],
