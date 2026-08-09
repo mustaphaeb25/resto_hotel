@@ -9,6 +9,7 @@ async function main() {
 
     app.listen(env.port, () => {
       console.log(`Server running on http://localhost:${env.port}`);
+      console.log(`Allowed CORS origins: ${env.frontendUrls.join(', ')}`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);

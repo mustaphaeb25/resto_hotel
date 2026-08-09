@@ -29,7 +29,7 @@ const app = express();
 app.set('trust proxy', env.trustProxy);
 
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
-app.use(cors({ origin: env.frontendUrls, credentials: true }));
+app.use(cors({ origin: true, credentials: true }));
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(express.json());
 
